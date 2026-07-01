@@ -2801,5 +2801,31 @@ document.getElementById("clearBtn2").onclick=()=>{chosen=[];laudos=[];renderList
 
 renderFilters();renderList();renderBody();
 </script>
+<script>
+// Service worker inline via Blob — cache offline (onde suportado)
+if("serviceWorker" in navigator){
+  const swCode = `
+    const CACHE="receitas-v1";
+    self.addEventListener("install", e=>{ self.skipWaiting(); });
+    self.addEventListener("activate", e=>{ self.clients.claim(); });
+    self.addEventListener("fetch", e=>{
+      e.respondWith(
+        caches.open(CACHE).then(cache=>
+          cache.match(e.request).then(hit=>
+            hit || fetch(e.request).then(resp=>{
+              try{ cache.put(e.request, resp.clone()); }catch(_){}
+              return resp;
+            }).catch(()=> caches.match("./"))
+          )
+        )
+      );
+    });
+  `;
+  try{
+    const blob=new Blob([swCode],{type:"application/javascript"});
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  }catch(_){}
+}
+</script>
 </body>
 </html>
